@@ -23,10 +23,6 @@
 #pragma comment(lib,"tommath.lib")
 #endif // _WIN64
 
-//去c2profile
-//控制指令重写
-//强
-
 void Beacon_init(HINSTANCE dllbase)
 {
 	Beacon_Dllbase = dllbase;
